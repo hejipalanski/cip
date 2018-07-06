@@ -1,0 +1,41 @@
+<html>
+	<head>
+		<title>xHamster Chat</title>
+		<link rel = "stylesheet" type = "text/css" href = "style.css"/>
+		<script src = "functionality.js"></script>
+		</head>
+			<body onLoad = "init();">
+			<div id = "container">
+				<div id = "left">
+					<div id = "leftRHeader">
+						<h1>Conversation</h1>
+						<div id = "chatSession">
+							<!-- <div id = "chat"></div> -->
+						</div>
+							<div id = "chatText">
+								<input type = "text" id="input" placeholder="Search.."/>
+								<input type = "button" value = "Send" onClick = "send();" />
+								<!-- <input type="text" placeholder="Search.." name="search"> -->
+								<!-- <button type="submit">Send</button>
+								<button type="submit"><i class="fa fa-search"></i></button>
+								<textarea> </textarea> -->
+								<!-- <input type = "text" id = "input" 	placeholder = "Type Something . . . . . ." color:/> -->
+								<!-- <input type = "button" id = "btnSend" value = "Send" onClick = "send();" /> -->
+							</div>
+					</div>
+				</div>
+				<div id = "right">
+						<div id = "leftRHeader">
+							<h2 id = "rightOnline">Online Member</h2>
+								<div id = "online">
+									<div class = "color"><span></span> Programmer 1</div>
+									<div class = "color"><span></span> Programmer 2</div>
+								</div>
+								<input type = "text" id="input" placeholder="Search.."/>
+								<input type = "button" value = "Send" onClick = "send();" />
+							</div>
+						</div>
+				</div>
+			</div>
+		</body>
+</html>
