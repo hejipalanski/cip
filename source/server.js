@@ -28,7 +28,7 @@ var broadcast = (sender, message) => {
 	}
 }
 
-var doesUserExists = (c) => {
+var isUserExists = (c) => {
 	for(client in clients) {
 		if (clients.has(client)) {
 			console.log("That username already exists. Please choose something else.");
@@ -59,14 +59,16 @@ const server = net.createServer((client) => {
 				console.log('in not on list ' + !isOnlist(client.name));
 				user['username'] = d.toString().replace('\r\n', '');
 				user['instance'] = client;
-				broadcast(user, ' joined the chat\n');
-				console.log(user.username + ' joined the chat\n');
-				clients[user.username] = user;
-				for (var x in clients) {
-					    console.log("Key: " + x + '\n');
-					    console.log(`Values: `);
-					    var value = clients[x];
+				if(!isUserExists(client.name)) {
+					broadcast(user, ' joined the chat\n');
+					console.log(user.username + ' joined the chat\n');
+					clients[user.username] = user;
+					for (var x in clients) {
+						console.log("Key: " + x + '\n');
+						console.log(`Values: `);
+						var value = clients[x];
 					}
+				}
 				break;
 			case false:
 				broadcast(user, d);
