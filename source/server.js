@@ -1,5 +1,5 @@
 const net = require("net");
-let clients = [];
+let clients = {};
 
 let sendPM = (sender, message) => {
 	let d = message.toString().split(' ');
@@ -23,24 +23,25 @@ var broadcast = (sender, message) => {
 		sendPM(sender, message);
 	}
 	else {
-		for(let c of clients) {
-			console.log('client: ' + c);
-			console.log('sender : ' + sender);
-			if(c.instance.name === sender.instance.name + '') {
-				continue;
-			}
-			//
-			c.instance.write(':' + sender.username + ': ' + message);
-		}
+		clients['name'] = sender;
+		clients['message'] = message;
 	}
 }
 
+var doesUserExists = (c) => {
+	for(client in clients) {
+		if (clients.has(client)) {
+			console.log("That username already exists. Please choose something else.");
+			res = true;
+			console.log(clients);
+		}
+	}
+} 
+
 var isOnlist = (c) => {
 	let res = false;
-	for(let client of clients) {
-		if(client.instance.name == c) {
-			res = true;
-		}
+	if(clients['name'] == c) {
+		res = true;
 	}
 	return(res);
 }
@@ -60,7 +61,12 @@ const server = net.createServer((client) => {
 				user['instance'] = client;
 				broadcast(user, ' joined the chat\n');
 				console.log(user.username + ' joined the chat\n');
-				clients.push(user);
+				clients[user.username] = user;
+				for (var x in clients) {
+					    console.log("Key: " + x + '\n');
+					    console.log(`Values: `);
+					    var value = clients[x];
+					}
 				break;
 			case false:
 				broadcast(user, d);
@@ -70,12 +76,13 @@ const server = net.createServer((client) => {
 	client.on('end', () => {
 		broadcast(user, ' has left\n');
 		console.log(client.name + ' has left\n');
-		clients.pop(user);
+		if (user in clients) {
+			    delete(clients[user]);
+			}
 	});
 });
 
 server.on('error', (err) => {
-	// throw err;
 	if(err) {
 		console.log('no users online');
 	}
