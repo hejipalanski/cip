@@ -24,12 +24,11 @@ var broadcast = (sender, message) => {
 	}
 	else {
 		for(let c of clients) {
-			console.log('client: ' + c);
-			console.log('sender : ' + sender);
+			// console.log('client: ' + c);
+			// console.log('sender : ' + sender);
 			if(c.instance.name === sender.instance.name + '') {
 				continue;
 			}
-			//
 			c.instance.write(':' + sender.username + ': ' + message);
 		}
 	}
@@ -45,7 +44,6 @@ var isOnlist = (c) => {
 	return(res);
 }
 
-
 const server = net.createServer((client) => {
 	client.write('WELCOME MGA KA XHAMSTER\n');
 	client.name = client.remoteAddress + ':' + client.remotePort;
@@ -55,7 +53,7 @@ const server = net.createServer((client) => {
 	client.on('data', (d) => {
 		switch(!isOnlist(client.name)) {
 			case true:
-				console.log('in not on list ' + !isOnlist(client.name));
+				// console.log('in not on list ' + !isOnlist(client.name));
 				user['username'] = d.toString().replace('\r\n', '');
 				user['instance'] = client;
 				broadcast(user, ' joined the chat\n');
@@ -83,4 +81,21 @@ server.on('error', (err) => {
 
 server.listen(5555, () => {
 	console.log('socket open on port 5555');
+});
+
+const WebSocketServer = require('websocket').server;
+let wss = new WebSocketServer({ httpServer: server});
+wss.on('request', (request) => {
+	var connection = request.accept();
+	console.log('Received a connection');
+	connection.log('Connection' + connection);
+
+	connection.on('message', (message) => {
+		console.log('Received ' + message.utf8Data);
+		connection.sendUTF(message.utf8Data);
+	});
+
+	connection.on('close', (reasonCode, description) => {
+		console.log('Connection closed');
+	});
 });
