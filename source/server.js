@@ -1,21 +1,36 @@
 const net = require("net");
 const http = require('http');
 const StaticServer =  require('node-static').Server;
-var file = new StaticServer('./public');
+const file = new StaticServer('./public');
 let clients = [];
+let webclients = [];
 const handlers = {};
+
+let getAllTCPUsername = ()=> {
+	usernames = [];
+	for(let client of clients) {
+		usernames.push(client.username);
+	}
+	return(usernames);
+}
+
+let getAllWEBSOCKusername = ()=> {
+	usernames = [];
+	for(let client of webclients) {
+		usernames.push(client.username);
+	}
+	return(usernames);
+}
 
 let sendPM = (sender, message) => {
 	let d = message.toString().split(' ');
 	let username = d[1];
-	let count = 2;
 	let m = '';
 	m = message.toString().replace('\r\n', '');
-	m = m.replace('PRIVATE', '');
+	m = m.replace(d[0], '');
 	m = m.replace(username, '');
 	for(let c of clients) {
-		count++;
-		if(count != d.length-1) {}
+		console.log(c.username);
 		if(c.username === username + '') {
 			c.instance.write('PM:' + sender.username + ': ' + m + '\r\n');
 		}
@@ -31,24 +46,20 @@ let displayActive = (sender) => {
 var notifywebclients = (sender, message) => {
 	for(let wc of webclients) {
 		if(wc.username === sender.username) {
-			continue;
+			wc.instance.sendUTF(':You: ' + message);
 		}
-		wc.instance.sendUTF(':' + sender.username + ': ' + message);
+		else {
+			wc.instance.sendUTF(':' + sender.username + ': ' + message);
+		}
 	}
 }
 
-var broadcast = (sender, message) => {
-	console.log(message.toString());
-	if(message.includes('PRIVATE')) {
-		sendPM(sender, message);
-	}
-	else {
-		for(let c of clients) {
-			if(c.instance.name === sender.instance.name) {
-				continue;
-			}
-			c.instance.write(':' + sender.username + ': ' + message);
+var notifyTcpClients = (sender, message) => {
+	for(let c of clients) {
+		if(c.instance.name === sender.instance.name) {
+			continue;
 		}
+		c.instance.write(':' + sender.username + ': ' + message);
 	}
 }
 
@@ -69,33 +80,51 @@ const netServer = net.createServer((client) => {
 	client.write('ENTER USERNAME: ');
 	let user = {};
 	client.on('data', (d) => {
-		dataFromSockets = d;
+		dataFromSockets = d.toString().replace('\r\n', '');
 		switch(!isOnlist(client.name)) {
 			case true:
-				user['username'] = d.toString().replace('\r\n', '');
+				user['username'] = dataFromSockets;
 				user['instance'] = client;
-				broadcast(user, ' joined the chat\n');
+				notifyTcpClients(user, ' joined the chat\n');
 				notifywebclients(user,' joined the chat\n');
-				console.log('On net Server ' + user.username + ' joined the chat\n');
+				console.log(user.username + ' joined the chat\n');
 				clients.push(user);
 				break;
 			case false:
-				notifywebclients(user, d);
-				broadcast(user, d);
+			let message = dataFromSockets.split(' ');
+				if(message[0].includes('private')) {
+					sendPM(user, dataFromSockets);
+				}
+				else if(message[0].startsWith('-ol')) {
+					if(clients.length > 0) {
+						for(let i = 0; i < clients.length; i++) {
+							client.write(clients[i].username + '\n');
+						}
+						for(let i=0; i < webclients.length; i++) {
+							client.write(webclients[i].username+'\n');
+						}
+					}
+					else {
+						client.write("no other users online");
+					}
+				}
+				else {
+					notifywebclients(user, d);
+					notifyTcpClients(user, d);
+				}
 				break;
 		}
 	});
 	client.on('end', () => {
 		notifywebclients(user,' has left\n');
-		broadcast(user, ' has left\n');
-		console.log(client.name + ' has left\n');
+		notifyTcpClients(user, ' has left\n');
 		clients.pop(user);
 	});
 });
 
 netServer.on('error', (err) => {
 	if(err) {
-		console.log('no users online');
+		console.log(err);
 	}
 });
 
@@ -107,6 +136,12 @@ handlers['/'] = (req, res) => {
 	file.serveFile('/index.html', 200, {"Content-Type" : "text/html"}, req, res);
 }
 
+handlers['/users'] = (req, res) => {
+	let usernames = getAllTCPUsername().concat(getAllWEBSOCKusername());
+	res.writeHead(200, { "Content-Type" : "application/json" });
+	res.end(JSON.stringify(usernames));
+}
+
 //HTTP SERVER
 const server = http.createServer((req, res) => {
 	console.log(req.url);
@@ -116,40 +151,41 @@ const server = http.createServer((req, res) => {
 	else {
 		file.serve(req, res, (err, result) => {
 			if(err) {
-				res.writeHead(404, {"Content-Type" : "text/plain"});
+				res.writeHead(404, { "Content-Type" : "text/plain" });
 				res.end(req.url + " not found");
 			}
 		});
 	}
 });
-
 server.listen(3434);
 console.log('listening on port 3434');
 
-var webclients = [];
 //WEBSOCKET SERVER
 const WebSocketServer = require('websocket').server;
-let wss = new WebSocketServer({ httpServer: server});
+let wss = new WebSocketServer({ httpServer: server });
 wss.on('request', (request) => {
 	var connection = request.accept();
-	console.log('Received a connection');
 	let user = {};
-	user['username'] = connection.socket._peername.address + ':' + connection.socket._peername.port;
 	user['instance'] = connection;
 	user['socket'] = connection.socket;
-	broadcast(user, ' joined the chat\n');
-	webclients.push(user);
 	connection.on('message', (message) => {
-		message = JSON.parse(message);
-		if(message.type == 'name') {
-			user.username = message.username;
+		message = JSON.parse(message.utf8Data);
+		switch(message.type) {
+			case 'name':
+				user['username'] = message.username;
+				notifyTcpClients(user, ' joined the chat\n');
+				notifywebclients(user, ' joined the chat\n');
+				webclients.push(user);
+				break;
+			default: console.log('Received ' + message.message);
+				notifywebclients(user, message.message);
+				notifyTcpClients(user, message.message + '\r\n');
+				break;
 		}
-		console.log('Received ' + message.utf8Data);
-			notifywebclients(user, message.utf8Data);
-			broadcast(user, message.utf8Data + '\r\n');
 	});
 
 	connection.on('close', (reasonCode, description) => {
-		console.log('Connection closed');
+		notifywebclients(user,' has left\n');
+		notifyTcpClients(user, ' has left\n');
 	});
 });
