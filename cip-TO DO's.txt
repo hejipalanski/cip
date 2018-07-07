@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 TO DO's:
 	chat app features
 	1. function in server - no username duplicate
@@ -13,4 +14,21 @@ ASSIGNMENT:
 	Pat & Bernie #4
 	Edward #5
 	Louievic #1 #2
+=======
+TO DO's:
+	chat app features
+	1. function in server - no username duplicate
+	2. function in server - display names of online users using speacial command (-ol)
+	3.function in server - display no. of online users
+	4. create user interface for browser
+	5. function in server - implement javascript map instead of array for clients[] for faster search in broadcast() and sendPM()
+	6. integrate websocket with the existing code
+	***optimize code
+	***follow coding conventions
+
+ASSIGNMENT:
+	Pat & Bernie #4
+	Edward #5
+	Louievic #1 #2
+>>>>>>> 86ff726fa36c649bb05dbe89e1de4a8ad44e8ed9
 	Heji #6
