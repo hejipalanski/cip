@@ -1,16 +1,22 @@
 <!DOCTYPE>
 <html>
 	<head>
-		<title>Websocket</title>
+		<title>Chat Room</title>
 	</head>
 	<body onload='init();'>
 		<script>
 			var ws;
 			function init() {
+				let username = prompt('username');
+				console.log(typeof username);
 				var url = document.URL.replace("http://", "ws://");
 				ws = new WebSocket(url);
 				ws.onopen = (evt) => {
 					console.log('socket is open');
+					ws.send(JSON.stringify({
+						type: 'name',
+						username: username
+					}));
 				}
 				ws.onclose = (evt) => {
 					console.log('socket is close');
@@ -22,13 +28,38 @@
 					document.getElementById("output").appendChild(p);
 				}
 				ws.onerror = (evt) => {}
+				userlist();
 			}
 			function send() {
-				ws.send(document.getElementById("input").value);
+				let chat = document.getElementById("input").value;
+				console.log(typeof(chat));
+				ws.send(JSON.stringify({
+					type: null,
+					message: chat
+				}));
+			}
+			let userlist = ()=> {
+				var xhr = new XMLHttpRequest();
+				xhr.open('GET', '/users', true);
+				xhr.onreadystatechange = () => {
+					if(xhr.readyState == 4) {
+						let a = document.createElement("a");
+						let users = JSON.parse(xhr.responseText);
+						a.innerHTML = users;
+						for(let name of users) {
+							document.getElementById("userlist").appendChild(a);
+							a.href = '#';
+							a.innerHTML = name;
+						}
+						console.log(users);
+					}
+				}
+				xhr.send();
 			}
 		</script>
 		<input type="text" id="input"/>
 		<input type="button" value="Send" onClick="send();"/>
 	<div id="output" ></div>
+	<div id="userlist" ></div>
 	</body>
 </html>
